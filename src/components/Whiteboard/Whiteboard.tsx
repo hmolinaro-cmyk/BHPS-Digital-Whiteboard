@@ -93,7 +93,7 @@ export const Whiteboard: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const stageWidth = (dimensions.width - 480) * docScale;
+  const stageWidth = Math.max(200, (dimensions.width - 480) * docScale);
   const stageHeight = Math.max(dimensions.height - 180, (pdfHeight + 40) * docScale);
 
   const handlePointerDown = useCallback((e: any) => {
