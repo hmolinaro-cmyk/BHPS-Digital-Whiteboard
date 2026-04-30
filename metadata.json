@@ -1,0 +1,6 @@
+{
+  "name": "BHPS Digital Whiteboard",
+  "description": "A high-performance virtual whiteboard for K-12 classrooms, featuring PDF annotation, math tools (ruler, protractor), and session persistence.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

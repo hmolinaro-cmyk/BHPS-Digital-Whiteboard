@@ -1,0 +1,175 @@
+import { useState, useCallback, useEffect } from 'react';
+import { WhiteboardState, WhiteboardLine, ToolState, Tool } from '../types/whiteboard';
+import { nanoid } from 'nanoid';
+
+export const useWhiteboard = (initialState?: Partial<WhiteboardState>) => {
+  const [state, setState] = useState<WhiteboardState>(() => {
+    const saved = localStorage.getItem('whiteboard-state');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        const defaultConfig = {
+          lines: [],
+          pdfPages: [],
+          currentPage: 0,
+          brushSize: 5,
+          eraserSize: 40,
+          brushColor: '#000000',
+          ruler: {
+            id: 'ruler-1',
+            type: Tool.Ruler,
+            x: 100,
+            y: 100,
+            rotation: 0,
+            visible: false,
+            scale: 1,
+          },
+          protractor: {
+            id: 'protractor-1',
+            type: Tool.Protractor,
+            x: 300,
+            y: 300,
+            rotation: 0,
+            visible: false,
+            scale: 1,
+          },
+        };
+        const state = { ...defaultConfig, ...parsed };
+        // Ensure tools are always invisible at startup
+        state.ruler.visible = false;
+        state.protractor.visible = false;
+        return state;
+      } catch (e) {
+        console.error('Failed to parse saved state', e);
+      }
+    }
+    return {
+      lines: [],
+      pdfPages: [],
+      currentPage: 0,
+      ruler: {
+        id: 'ruler-1',
+        type: Tool.Ruler,
+        x: 100,
+        y: 100,
+        rotation: 0,
+        visible: false,
+        scale: 1,
+      },
+      protractor: {
+        id: 'protractor-1',
+        type: Tool.Protractor,
+        x: 300,
+        y: 300,
+        rotation: 0,
+        visible: false,
+        scale: 1,
+      },
+      brushSize: 5,
+      eraserSize: 40,
+      brushColor: '#000000',
+      ...initialState,
+    };
+  });
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      localStorage.setItem('whiteboard-state', JSON.stringify(state));
+    }, 1000); // Save after 1 second of inactivity
+    return () => clearTimeout(timeout);
+  }, [state]);
+
+  const [history, setHistory] = useState<WhiteboardLine[][]>([[]]);
+  const [historyIndex, setHistoryIndex] = useState(0);
+
+  const addLine = useCallback((line: Omit<WhiteboardLine, 'pageIndex'>) => {
+    setState((prev) => ({ 
+      ...prev, 
+      lines: [...prev.lines, { ...line, pageIndex: prev.currentPage }] 
+    }));
+  }, []);
+
+  const commitToHistory = useCallback(() => {
+    setState((prev) => {
+      const newHistory = history.slice(0, historyIndex + 1);
+      newHistory.push(prev.lines);
+      setHistory(newHistory);
+      setHistoryIndex(newHistory.length - 1);
+      return prev;
+    });
+  }, [history, historyIndex]);
+
+  const updateCurrentLine = useCallback((points: number[]) => {
+    setState((prev) => {
+      const lastIdx = prev.lines.length - 1;
+      if (lastIdx < 0) return prev;
+      
+      const newLines = [...prev.lines];
+      newLines[lastIdx] = { ...newLines[lastIdx], points };
+      return { ...prev, lines: newLines };
+    });
+  }, []);
+
+  const undo = useCallback(() => {
+    if (historyIndex > 0) {
+      const prevIndex = historyIndex - 1;
+      setHistoryIndex(prevIndex);
+      setState(prev => ({ ...prev, lines: history[prevIndex] }));
+    }
+  }, [history, historyIndex]);
+
+  const clear = useCallback(() => {
+    setState(prev => ({ ...prev, lines: [] }));
+    setHistory([[]]);
+    setHistoryIndex(0);
+  }, []);
+
+  const clearAll = useCallback(() => {
+    localStorage.removeItem('whiteboard-state');
+    window.location.reload();
+  }, []);
+
+  const resetTools = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      ruler: { ...prev.ruler, x: 100, y: 100, rotation: 0, scale: 1, visible: false },
+      protractor: { ...prev.protractor, x: 300, y: 300, rotation: 0, scale: 1, visible: false },
+    }));
+  }, []);
+
+  const setPDFPages = useCallback((pages: string[]) => {
+    setState(prev => ({ ...prev, pdfPages: pages, currentPage: 0 }));
+  }, []);
+
+  const updateToolPos = useCallback((tool: 'ruler' | 'protractor', newState: ToolState) => {
+    setState(prev => ({ ...prev, [tool]: newState }));
+  }, []);
+
+  const setSize = useCallback((tool: Tool.Pen | Tool.Eraser, size: number) => {
+    setState(prev => ({
+      ...prev,
+      [tool === Tool.Pen ? 'brushSize' : 'eraserSize']: Math.max(1, size)
+    }));
+  }, []);
+
+  const setColor = useCallback((color: string) => {
+    setState(prev => ({ ...prev, brushColor: color }));
+  }, []);
+
+  return {
+    state,
+    addLine,
+    updateCurrentLine,
+    undo,
+    clear,
+    clearAll,
+    resetTools,
+    commitToHistory,
+    setPDFPages,
+    updateToolPos,
+    setSize,
+    setColor,
+    setState
+  };
+};
+
