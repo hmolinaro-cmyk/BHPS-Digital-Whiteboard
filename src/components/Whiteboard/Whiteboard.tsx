@@ -61,6 +61,7 @@ export const Whiteboard: React.FC = () => {
   const [pdfHeight, setPdfHeight] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
   const [containerDimensions, setContainerDimensions] = useState({ width: 0, height: 0 });
 
   const stageRef = useRef<any>(null);
@@ -410,8 +411,11 @@ export const Whiteboard: React.FC = () => {
     const file = e.target.files?.[0];
     if (file) {
       setIsUploading(true);
+      setUploadProgress({ current: 0, total: 0 });
       try {
-        const pages = await renderPDFToImages(file);
+        const pages = await renderPDFToImages(file, (current, total) => {
+          setUploadProgress({ current, total });
+        });
         setPDFPages(pages);
         
         // Maintain 1:1 local scale for the tools (accuracy)
@@ -423,6 +427,7 @@ export const Whiteboard: React.FC = () => {
         console.error('PDF Upload failed', err);
       } finally {
         setIsUploading(false);
+        setUploadProgress({ current: 0, total: 0 });
       }
     }
   };
@@ -895,26 +900,40 @@ export const Whiteboard: React.FC = () => {
       </div>
       
       {(isExporting || isUploading) && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex flex-col items-center justify-center">
-            <div className="bg-white p-8 rounded-3xl border-4 border-bento-border shadow-[8px_8px_0px_0px_#0f172a] text-center max-w-sm">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex flex-col items-center justify-center p-6">
+            <div className="bg-white p-8 rounded-3xl border-4 border-bento-border shadow-[8px_8px_0px_0px_#0f172a] text-center w-full max-w-sm">
                 <div className="w-16 h-16 border-8 border-slate-100 border-t-bento-primary rounded-full animate-spin mx-auto mb-6" />
                 <h2 className="text-2xl font-black uppercase tracking-tighter text-slate-900 leading-tight">
                   {isExporting ? "Generating PDF" : "Processing PDF"}
                 </h2>
-                <p className="text-xs font-bold text-slate-500 uppercase mt-2 tracking-widest">
-                  {isExporting ? "Processing all pages and annotations..." : "Converting document for digital whiteboard..."}
+                <p className="text-xs font-bold text-slate-500 uppercase mt-2 tracking-widest mb-6">
+                  {isExporting ? "Processing all pages and annotations..." : `Optimizing ${uploadProgress.total} pages for digital whiteboard...`}
                 </p>
-                {isExporting && (
-                  <>
-                    <div className="mt-6 h-2 bg-slate-100 rounded-full overflow-hidden">
-                        <div 
-                            className="h-full bg-bento-primary transition-all duration-500" 
-                            style={{ width: `${(state.currentPage / state.pdfPages.length) * 100}%` }}
-                        />
-                    </div>
-                    <p className="text-[10px] font-black text-bento-primary mt-2">PAGE {state.currentPage + 1} OF {state.pdfPages.length}</p>
-                  </>
-                )}
+
+                <div className="w-full bg-slate-100 rounded-full h-4 border-2 border-bento-border overflow-hidden mb-2">
+                  <div 
+                    className="bg-bento-primary h-full transition-all duration-300" 
+                    style={{ 
+                      width: isExporting 
+                        ? `${((state.currentPage + 1) / state.pdfPages.length) * 100}%` 
+                        : `${(uploadProgress.current / uploadProgress.total) * 100}%` 
+                    }}
+                  />
+                </div>
+
+                <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-slate-400">
+                  {isExporting ? (
+                    <>
+                      <span>{Math.round(((state.currentPage + 1) / state.pdfPages.length) * 100) || 0}% Complete</span>
+                      <span>Page {state.currentPage + 1} / {state.pdfPages.length}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>{Math.round((uploadProgress.current / uploadProgress.total) * 100) || 0}% Complete</span>
+                      <span>{uploadProgress.current} / {uploadProgress.total} Pages</span>
+                    </>
+                  )}
+                </div>
             </div>
         </div>
       )}
