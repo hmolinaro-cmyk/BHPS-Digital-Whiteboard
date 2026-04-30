@@ -73,8 +73,8 @@ export const Whiteboard: React.FC = () => {
   const activeHeight = containerDimensions.height || (dimensions.height - 180);
 
   // Calculate a resolution-based scale for tools to ensure they stay readable
-  // Reference width is 1200px
-  const resScale = Math.max(0.6, Math.min(1.2, activeWidth / 1200));
+  // Reference width is 1440px for a standard desktop view
+  const resScale = Math.max(0.5, Math.min(1.0, activeWidth / 1440));
 
   // Maintain a stable ref for state to avoid recreating event handlers
   const stateRef = useRef(state);
@@ -159,8 +159,8 @@ export const Whiteboard: React.FC = () => {
     if (currentToolRef.current !== Tool.Eraser) {
       if (stateRef.current.ruler.visible) {
         const rad = (stateRef.current.ruler.rotation * Math.PI) / 180;
-        const inchStep = 98.425 * stateRef.current.ruler.scale * resScaleRef.current;
-        const rWidth = 10 * inchStep;
+        const inchStep = 96 * stateRef.current.ruler.scale * resScaleRef.current;
+        const rWidth = 8 * inchStep;
         const rStart = { x: stateRef.current.ruler.x, y: stateRef.current.ruler.y };
         const rEnd = { 
           x: stateRef.current.ruler.x + Math.cos(rad) * rWidth, 
@@ -178,7 +178,7 @@ export const Whiteboard: React.FC = () => {
       }
 
       if (stateRef.current.protractor.visible) {
-        const radius = 400 * stateRef.current.protractor.scale * resScaleRef.current;
+        const radius = 280 * stateRef.current.protractor.scale * resScaleRef.current;
         const center = { x: stateRef.current.protractor.x, y: stateRef.current.protractor.y };
         const snapped = getNearestPointOnArc(transformedPos, center, radius, snapThreshold, stateRef.current.protractor.rotation);
         if (snapped) {
@@ -257,8 +257,8 @@ export const Whiteboard: React.FC = () => {
     if (currentToolRef.current !== Tool.Eraser) {
       if (stateRef.current.ruler.visible) {
         const rad = (stateRef.current.ruler.rotation * Math.PI) / 180;
-        const inchStep = 98.425 * stateRef.current.ruler.scale * resScaleRef.current;
-        const rWidth = 10 * inchStep;
+        const inchStep = 96 * stateRef.current.ruler.scale * resScaleRef.current;
+        const rWidth = 8 * inchStep;
         const rStart = { x: stateRef.current.ruler.x, y: stateRef.current.ruler.y };
         const rEnd = { 
           x: stateRef.current.ruler.x + Math.cos(rad) * rWidth, 
@@ -275,7 +275,7 @@ export const Whiteboard: React.FC = () => {
       }
 
       if (stateRef.current.protractor.visible) {
-        const radius = 400 * stateRef.current.protractor.scale * resScaleRef.current;
+        const radius = 280 * stateRef.current.protractor.scale * resScaleRef.current;
         const center = { x: stateRef.current.protractor.x, y: stateRef.current.protractor.y };
         const snapped = getNearestPointOnArc(transformedPos, center, radius, snapThreshold, stateRef.current.protractor.rotation);
         if (snapped) {

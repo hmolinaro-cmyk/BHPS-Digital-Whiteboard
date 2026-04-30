@@ -12,10 +12,10 @@ interface RulerProps {
 }
 
 export const Ruler: React.FC<RulerProps> = React.memo(({ state, onChange, documentScale = 1, resolutionScale = 1, draggable = true, listening = true }) => {
-  // Initial width is 10 inches by default
-  const inchStep = 98.425 * state.scale * resolutionScale; 
-  const width = 10 * inchStep;
-  const height = 120 * state.scale * resolutionScale;  
+  // Initial width is 8 inches by default
+  const inchStep = 96 * state.scale * resolutionScale; 
+  const width = 8 * inchStep;
+  const height = 90 * state.scale * resolutionScale;  
   const markings = React.useMemo(() => {
     const result = [];
     

@@ -12,7 +12,7 @@ interface ProtractorProps {
 }
 
 export const Protractor: React.FC<ProtractorProps> = React.memo(({ state, onChange, documentScale = 1, resolutionScale = 1, draggable = true, listening = true }) => {
-  const radius = 400 * state.scale * resolutionScale;
+  const radius = 280 * state.scale * resolutionScale;
   
   const markings = React.useMemo(() => {
     const result = [];
