@@ -40,12 +40,6 @@ jobs:
         run: npm ci
       - name: Build
         run: npm run build
-      - name: Debug Output
-        run: |
-          echo "Listing dist directory:"
-          ls -R dist
-          echo "Content of dist/index.html:"
-          cat dist/index.html
       - name: Setup Pages
         uses: actions/configure-pages@v4
       - name: Upload artifact

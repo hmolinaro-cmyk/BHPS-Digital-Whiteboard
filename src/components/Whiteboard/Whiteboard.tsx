@@ -59,23 +59,36 @@ export const Whiteboard: React.FC = () => {
   const [docScale, setDocScale] = useState(0.9);
   const [dimensions, setDimensions] = useState({ width: window.innerWidth, height: window.innerHeight - 80 });
   const [pdfHeight, setPdfHeight] = useState(0);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [containerDimensions, setContainerDimensions] = useState({ width: 0, height: 0 });
 
   const stageRef = useRef<any>(null);
   const eraserRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Use container dimensions if available for better resolution awareness
+  const activeWidth = containerDimensions.width || (dimensions.width - 480);
+  const activeHeight = containerDimensions.height || (dimensions.height - 180);
+
+  // Calculate a resolution-based scale for tools to ensure they stay readable
+  // Reference width is 1200px
+  const resScale = Math.max(0.6, Math.min(1.2, activeWidth / 1200));
+
   // Maintain a stable ref for state to avoid recreating event handlers
   const stateRef = useRef(state);
   const currentToolRef = useRef(currentTool);
   const isDrawingRef = useRef(isDrawing);
   const docScaleRef = useRef(docScale);
+  const resScaleRef = useRef(resScale);
   const currentLinePointsRef = useRef<number[]>([]);
 
   useEffect(() => { stateRef.current = state; }, [state]);
   useEffect(() => { currentToolRef.current = currentTool; }, [currentTool]);
   useEffect(() => { isDrawingRef.current = isDrawing; }, [isDrawing]);
   useEffect(() => { docScaleRef.current = docScale; }, [docScale]);
+  useEffect(() => { resScaleRef.current = resScale; }, [resScale]);
 
   useEffect(() => {
     if (containerRef.current) {
@@ -86,6 +99,22 @@ export const Whiteboard: React.FC = () => {
   // PDF Height management
 
   useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.contentRect) {
+          setContainerDimensions({
+            width: entry.contentRect.width,
+            height: entry.contentRect.height
+          });
+        }
+      }
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
     const handleResize = () => {
       setDimensions({ width: window.innerWidth, height: window.innerHeight - 80 });
     };
@@ -93,8 +122,9 @@ export const Whiteboard: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const stageWidth = Math.max(200, (dimensions.width - 480) * docScale);
-  const stageHeight = Math.max(dimensions.height - 180, (pdfHeight + 40) * docScale);
+
+  const stageWidth = Math.max(200, activeWidth * docScale);
+  const stageHeight = Math.max(activeHeight, (pdfHeight + 40) * docScale);
 
   const handlePointerDown = useCallback((e: any) => {
     // Prevent drawing when clicking on tools or buttons or if not primary pointer
@@ -129,7 +159,7 @@ export const Whiteboard: React.FC = () => {
     if (currentToolRef.current !== Tool.Eraser) {
       if (stateRef.current.ruler.visible) {
         const rad = (stateRef.current.ruler.rotation * Math.PI) / 180;
-        const inchStep = 98.425 * stateRef.current.ruler.scale;
+        const inchStep = 98.425 * stateRef.current.ruler.scale * resScaleRef.current;
         const rWidth = 10 * inchStep;
         const rStart = { x: stateRef.current.ruler.x, y: stateRef.current.ruler.y };
         const rEnd = { 
@@ -148,7 +178,7 @@ export const Whiteboard: React.FC = () => {
       }
 
       if (stateRef.current.protractor.visible) {
-        const radius = 400 * stateRef.current.protractor.scale;
+        const radius = 400 * stateRef.current.protractor.scale * resScaleRef.current;
         const center = { x: stateRef.current.protractor.x, y: stateRef.current.protractor.y };
         const snapped = getNearestPointOnArc(transformedPos, center, radius, snapThreshold, stateRef.current.protractor.rotation);
         if (snapped) {
@@ -227,7 +257,7 @@ export const Whiteboard: React.FC = () => {
     if (currentToolRef.current !== Tool.Eraser) {
       if (stateRef.current.ruler.visible) {
         const rad = (stateRef.current.ruler.rotation * Math.PI) / 180;
-        const inchStep = 98.425 * stateRef.current.ruler.scale;
+        const inchStep = 98.425 * stateRef.current.ruler.scale * resScaleRef.current;
         const rWidth = 10 * inchStep;
         const rStart = { x: stateRef.current.ruler.x, y: stateRef.current.ruler.y };
         const rEnd = { 
@@ -245,7 +275,7 @@ export const Whiteboard: React.FC = () => {
       }
 
       if (stateRef.current.protractor.visible) {
-        const radius = 400 * stateRef.current.protractor.scale;
+        const radius = 400 * stateRef.current.protractor.scale * resScaleRef.current;
         const center = { x: stateRef.current.protractor.x, y: stateRef.current.protractor.y };
         const snapped = getNearestPointOnArc(transformedPos, center, radius, snapThreshold, stateRef.current.protractor.rotation);
         if (snapped) {
@@ -273,8 +303,6 @@ export const Whiteboard: React.FC = () => {
     }
   }, [commitToHistory]);
 
-  const [isExporting, setIsExporting] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
 
   const downloadAsPDF = useCallback(async () => {
     if (state.pdfPages.length === 0) return;
@@ -570,6 +598,7 @@ export const Whiteboard: React.FC = () => {
                     state={state.ruler} 
                     onChange={(s) => updateToolPos('ruler', s)} 
                     documentScale={docScale}
+                    resolutionScale={resScale}
                     draggable={currentTool === Tool.Select}
                     listening={currentTool === Tool.Select}
                   />
@@ -577,6 +606,7 @@ export const Whiteboard: React.FC = () => {
                     state={state.protractor} 
                     onChange={(s) => updateToolPos('protractor', s)} 
                     documentScale={docScale}
+                    resolutionScale={resScale}
                     draggable={currentTool === Tool.Select}
                     listening={currentTool === Tool.Select}
                   />

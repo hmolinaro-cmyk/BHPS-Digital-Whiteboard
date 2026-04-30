@@ -6,12 +6,13 @@ interface ProtractorProps {
   state: ToolState;
   onChange: (newState: ToolState) => void;
   documentScale?: number;
+  resolutionScale?: number;
   draggable?: boolean;
   listening?: boolean;
 }
 
-export const Protractor: React.FC<ProtractorProps> = React.memo(({ state, onChange, documentScale = 1, draggable = true, listening = true }) => {
-  const radius = 400 * state.scale;
+export const Protractor: React.FC<ProtractorProps> = React.memo(({ state, onChange, documentScale = 1, resolutionScale = 1, draggable = true, listening = true }) => {
+  const radius = 400 * state.scale * resolutionScale;
   
   const markings = React.useMemo(() => {
     const result = [];
