@@ -74,8 +74,9 @@ export const Whiteboard: React.FC = () => {
   const activeHeight = containerDimensions.height || (dimensions.height - 180);
 
   // Calculate a resolution-based scale for tools to ensure they stay readable
-  // Reference width is 1440px for a standard desktop view
-  const resScale = Math.max(0.5, Math.min(1.0, activeWidth / 1440));
+  // Reference width is 1440px for a standard desktop view.
+  // Allow scaling up for high-resolution screens (like 4K boards).
+  const resScale = Math.max(0.6, Math.min(2.0, activeWidth / 1440));
 
   // Maintain a stable ref for state to avoid recreating event handlers
   const stateRef = useRef(state);
@@ -153,7 +154,7 @@ export const Whiteboard: React.FC = () => {
     
     // Check for snapping
     let startPoint = transformedPos;
-    const snapThreshold = 1.0 / docScaleRef.current;
+    const snapThreshold = 25 / docScaleRef.current;
     let bestSnap: Point | null = null;
     let minSnapDist = Infinity;
 
@@ -251,7 +252,7 @@ export const Whiteboard: React.FC = () => {
     if (moveDist < 2 / docScaleRef.current) return;
 
     let currentPoint = transformedPos;
-    const snapThreshold = 1.0 / docScaleRef.current;
+    const snapThreshold = 25 / docScaleRef.current;
     let bestSnap: Point | null = null;
     let minSnapDist = Infinity;
 
