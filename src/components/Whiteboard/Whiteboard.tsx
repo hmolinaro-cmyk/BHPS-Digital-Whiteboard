@@ -101,6 +101,28 @@ export const Whiteboard: React.FC = () => {
   // PDF Height management
 
   useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    // Native listeners with passive: false are needed to reliably prevent scrolling on many touch devices
+    const handleTouch = (e: TouchEvent) => {
+      if (currentToolRef.current !== Tool.Select) {
+        if (e.cancelable) {
+          e.preventDefault();
+        }
+      }
+    };
+
+    container.addEventListener('touchstart', handleTouch, { passive: false });
+    container.addEventListener('touchmove', handleTouch, { passive: false });
+
+    return () => {
+      container.removeEventListener('touchstart', handleTouch);
+      container.removeEventListener('touchmove', handleTouch);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!containerRef.current) return;
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
@@ -135,6 +157,10 @@ export const Whiteboard: React.FC = () => {
     // Prevent default browser behavior explicitly
     if (e.evt && e.evt.cancelable !== false) {
       e.evt.preventDefault();
+      // Also stop propagation to prevent parent containers from reacting
+      if (typeof e.evt.stopPropagation === 'function') {
+        e.evt.stopPropagation();
+      }
     }
 
     const stage = stageRef.current;
@@ -208,6 +234,11 @@ export const Whiteboard: React.FC = () => {
   }, [addLine]);
 
   const handlePointerMove = useCallback((e: any) => {
+    // Prevent default browser behavior while moving if we are drawing or not in select mode
+    if (currentToolRef.current !== Tool.Select && e.evt && e.evt.cancelable !== false) {
+      e.evt.preventDefault();
+    }
+
     const stage = stageRef.current;
     if (!stage) return;
     const pos = stage.getPointerPosition();
@@ -547,8 +578,11 @@ export const Whiteboard: React.FC = () => {
         <div className="bento-card bg-slate-200 relative overflow-hidden">
           <div 
             ref={containerRef}
-            className={`absolute inset-0 p-4 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:20px_20px] scroll-smooth ${isDrawing ? 'overflow-hidden' : 'overflow-auto'}`}
-            style={{ touchAction: currentTool === Tool.Select ? 'auto' : 'none' }}
+            className={`absolute inset-0 p-4 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:20px_20px] scroll-smooth overflow-auto select-none overscroll-none`}
+            style={{ 
+              touchAction: currentTool === Tool.Select ? 'auto' : 'none',
+              msTouchAction: currentTool === Tool.Select ? 'auto' : 'none'
+            }}
           >
             <div 
               className="shrink-0 shadow-2xl border-bento-border border bg-white mb-20 mx-auto" 
