@@ -73,17 +73,20 @@ export const Whiteboard: React.FC = () => {
   const activeWidth = containerDimensions.width || (dimensions.width - 480);
   const activeHeight = containerDimensions.height || (dimensions.height - 180);
 
+  // Reference width for PDF rendering - we use a consistent value for both rendering and calibration
+  const pdfRefWidth = Math.max(400, activeWidth - 40);
+
   // Calculate a resolution-based scale for tools to ensure they stay readable
   // If a PDF is loaded, we calibrate the ruler to match the PDF's internal dimensions
   const currentPageInfo = state.pdfPages[state.currentPage];
-  const pdfRefWidth = dimensions.width - 500;
   
   let resScale = Math.max(0.6, Math.min(2.0, activeWidth / 1440));
   
   if (currentPageInfo && currentPageInfo.width) {
     // 1 point in PDF = 1/72 inch.
-    // PPI = (pdfRefWidth / currentPageInfo.width) * 72
-    // Our ruler uses 96px as base inch, so we scale by PPI/96
+    // Our ruler uses 96px as base inch at scale 1.0.
+    // PPI on screen = (pdfRefWidth / currentPageInfo.width) * 72
+    // resScale = PPI_on_screen / 96
     resScale = (pdfRefWidth / currentPageInfo.width) * (72 / 96);
   }
 
@@ -198,7 +201,8 @@ export const Whiteboard: React.FC = () => {
         const rad = (stateRef.current.ruler.rotation * Math.PI) / 180;
         const isCm = stateRef.current.ruler.unit === 'cm';
         const unitStep = isCm ? (96 / 2.54) * stateRef.current.ruler.scale * resScaleRef.current : 96 * stateRef.current.ruler.scale * resScaleRef.current;
-        const rWidth = (isCm ? 30 : 12) * unitStep;
+        const indent = 15 * resScaleRef.current;
+        const rWidth = (isCm ? 30 : 12) * unitStep + (indent * 2);
         const rStart = { x: stateRef.current.ruler.x, y: stateRef.current.ruler.y };
         const rEnd = { 
           x: stateRef.current.ruler.x + Math.cos(rad) * rWidth, 
@@ -302,7 +306,8 @@ export const Whiteboard: React.FC = () => {
         const rad = (stateRef.current.ruler.rotation * Math.PI) / 180;
         const isCm = stateRef.current.ruler.unit === 'cm';
         const unitStep = isCm ? (96 / 2.54) * stateRef.current.ruler.scale * resScaleRef.current : 96 * stateRef.current.ruler.scale * resScaleRef.current;
-        const rWidth = (isCm ? 30 : 12) * unitStep;
+        const indent = 15 * resScaleRef.current;
+        const rWidth = (isCm ? 30 : 12) * unitStep + (indent * 2);
         const rStart = { x: stateRef.current.ruler.x, y: stateRef.current.ruler.y };
         const rEnd = { 
           x: stateRef.current.ruler.x + Math.cos(rad) * rWidth, 
@@ -625,7 +630,7 @@ export const Whiteboard: React.FC = () => {
                   {state.pdfPages[state.currentPage] && (
                     <PDFPage 
                       url={state.pdfPages[state.currentPage].url} 
-                      width={(dimensions.width - 500)} 
+                      width={pdfRefWidth} 
                       onHeightChange={setPdfHeight}
                     />
                   )}

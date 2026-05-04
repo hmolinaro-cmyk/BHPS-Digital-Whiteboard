@@ -21,14 +21,17 @@ export const Ruler: React.FC<RulerProps> = React.memo(({ state, onChange, docume
   
   const unitStep = isCm ? cmStep : inchStep;
   const numUnits = isCm ? 30 : 12; // 30cm or 12in (Standard ruler sizes)
-  const width = numUnits * unitStep;
+  
+  // Add a small padding (lead-in) at the start so the 0 mark isn't on the absolute edge
+  const indent = 15 * resolutionScale; 
+  const width = (numUnits * unitStep) + (indent * 2);
   const height = 100 * state.scale * resolutionScale;
 
   const markings = React.useMemo(() => {
     const result = [];
     
     for (let i = 0; i <= numUnits; i++) {
-      const x = i * unitStep;
+      const x = indent + (i * unitStep);
       
       // Major Marker
       result.push(
@@ -43,7 +46,7 @@ export const Ruler: React.FC<RulerProps> = React.memo(({ state, onChange, docume
             y={42}
             width={40}
             text={`${i}`}
-            fontSize={isCm ? 14 : 16}
+            fontSize={(isCm ? 14 : 16) * resolutionScale}
             fontStyle="bold"
             fill="#0f172a"
             align="center"
@@ -130,7 +133,7 @@ export const Ruler: React.FC<RulerProps> = React.memo(({ state, onChange, docume
         x={width - 60}
         y={height - 25}
         text={isCm ? 'METRIC (CM)' : 'IMPERIAL (IN)'}
-        fontSize={10}
+        fontSize={10 * resolutionScale}
         fontStyle="black"
         fill="#b45309"
         opacity={0.6}
