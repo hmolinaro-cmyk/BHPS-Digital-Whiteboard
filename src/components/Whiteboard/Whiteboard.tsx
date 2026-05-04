@@ -187,8 +187,9 @@ export const Whiteboard: React.FC = () => {
     if (currentToolRef.current !== Tool.Eraser) {
       if (stateRef.current.ruler.visible) {
         const rad = (stateRef.current.ruler.rotation * Math.PI) / 180;
-        const inchStep = 96 * stateRef.current.ruler.scale * resScaleRef.current;
-        const rWidth = 8 * inchStep;
+        const isCm = stateRef.current.ruler.unit === 'cm';
+        const unitStep = isCm ? (96 / 2.54) * stateRef.current.ruler.scale * resScaleRef.current : 96 * stateRef.current.ruler.scale * resScaleRef.current;
+        const rWidth = (isCm ? 20 : 8) * unitStep;
         const rStart = { x: stateRef.current.ruler.x, y: stateRef.current.ruler.y };
         const rEnd = { 
           x: stateRef.current.ruler.x + Math.cos(rad) * rWidth, 
@@ -290,8 +291,9 @@ export const Whiteboard: React.FC = () => {
     if (currentToolRef.current !== Tool.Eraser) {
       if (stateRef.current.ruler.visible) {
         const rad = (stateRef.current.ruler.rotation * Math.PI) / 180;
-        const inchStep = 96 * stateRef.current.ruler.scale * resScaleRef.current;
-        const rWidth = 8 * inchStep;
+        const isCm = stateRef.current.ruler.unit === 'cm';
+        const unitStep = isCm ? (96 / 2.54) * stateRef.current.ruler.scale * resScaleRef.current : 96 * stateRef.current.ruler.scale * resScaleRef.current;
+        const rWidth = (isCm ? 20 : 8) * unitStep;
         const rStart = { x: stateRef.current.ruler.x, y: stateRef.current.ruler.y };
         const rEnd = { 
           x: stateRef.current.ruler.x + Math.cos(rad) * rWidth, 
@@ -814,6 +816,13 @@ export const Whiteboard: React.FC = () => {
                   title="Rotate Ruler 90°"
                 >
                   <RotateCw className="w-4 h-4" />
+                </button>
+                <button 
+                  className="bento-tool-btn hover:bg-amber-100 border-amber-200"
+                  onClick={() => updateToolPos('ruler', { ...state.ruler, unit: state.ruler.unit === 'cm' ? 'in' : 'cm' })}
+                  title={`Switch to ${state.ruler.unit === 'cm' ? 'Inches' : 'Centimeters'}`}
+                >
+                  <span className="text-[10px] font-black">{state.ruler.unit === 'cm' ? 'CM' : 'IN'}</span>
                 </button>
               </div>
               <span className="text-[9px] font-black font-mono text-amber-600 uppercase tracking-tighter">

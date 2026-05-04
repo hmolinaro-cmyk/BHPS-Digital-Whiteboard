@@ -23,6 +23,7 @@ export const useWhiteboard = (initialState?: Partial<WhiteboardState>) => {
             rotation: 0,
             visible: false,
             scale: 1,
+            unit: 'in',
           },
           protractor: {
             id: 'protractor-1',
@@ -55,6 +56,7 @@ export const useWhiteboard = (initialState?: Partial<WhiteboardState>) => {
         rotation: 0,
         visible: false,
         scale: 1,
+        unit: 'in',
       },
       protractor: {
         id: 'protractor-1',

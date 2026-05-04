@@ -28,6 +28,7 @@ export interface ToolState {
   rotation: number;
   visible: boolean;
   scale: number;
+  unit?: 'in' | 'cm';
 }
 
 export interface WhiteboardState {
