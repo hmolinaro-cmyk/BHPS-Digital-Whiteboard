@@ -74,9 +74,18 @@ export const Whiteboard: React.FC = () => {
   const activeHeight = containerDimensions.height || (dimensions.height - 180);
 
   // Calculate a resolution-based scale for tools to ensure they stay readable
-  // Reference width is 1440px for a standard desktop view.
-  // Allow scaling up for high-resolution screens (like 4K boards).
-  const resScale = Math.max(0.6, Math.min(2.0, activeWidth / 1440));
+  // If a PDF is loaded, we calibrate the ruler to match the PDF's internal dimensions
+  const currentPageInfo = state.pdfPages[state.currentPage];
+  const pdfRefWidth = dimensions.width - 500;
+  
+  let resScale = Math.max(0.6, Math.min(2.0, activeWidth / 1440));
+  
+  if (currentPageInfo && currentPageInfo.width) {
+    // 1 point in PDF = 1/72 inch.
+    // PPI = (pdfRefWidth / currentPageInfo.width) * 72
+    // Our ruler uses 96px as base inch, so we scale by PPI/96
+    resScale = (pdfRefWidth / currentPageInfo.width) * (72 / 96);
+  }
 
   // Maintain a stable ref for state to avoid recreating event handlers
   const stateRef = useRef(state);
@@ -366,11 +375,11 @@ export const Whiteboard: React.FC = () => {
         // Update progress UI
         setState(prev => ({ ...prev, currentPage: i }));
         
-        const pageImage = state.pdfPages[i];
+        const pageInfo = state.pdfPages[i];
         
         // Wait for image loading
         const img = new Image();
-        img.src = pageImage;
+        img.src = pageInfo.url;
         await new Promise((resolve, reject) => {
           img.onload = resolve;
           img.onerror = reject;
@@ -565,7 +574,7 @@ export const Whiteboard: React.FC = () => {
                     `}
                   >
                     <div className="w-full h-full bg-slate-100 rounded-lg overflow-hidden border border-slate-200 mb-2">
-                      <img src={page} alt={`Page ${idx + 1}`} className="w-full h-full object-cover" />
+                      <img src={page.url} alt={`Page ${idx + 1}`} className="w-full h-full object-cover" />
                     </div>
                     <span className={`text-[10px] font-black uppercase ${state.currentPage === idx ? 'text-bento-primary' : 'text-slate-500'}`}>
                       Page {idx + 1}
@@ -615,7 +624,7 @@ export const Whiteboard: React.FC = () => {
                 <Layer scaleX={docScale} scaleY={docScale}>
                   {state.pdfPages[state.currentPage] && (
                     <PDFPage 
-                      url={state.pdfPages[state.currentPage]} 
+                      url={state.pdfPages[state.currentPage].url} 
                       width={(dimensions.width - 500)} 
                       onHeightChange={setPdfHeight}
                     />

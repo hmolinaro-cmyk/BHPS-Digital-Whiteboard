@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { WhiteboardState, WhiteboardLine, ToolState, Tool } from '../types/whiteboard';
+import { WhiteboardState, WhiteboardLine, ToolState, Tool, PDFPageInfo } from '../types/whiteboard';
 import { nanoid } from 'nanoid';
 
 export const useWhiteboard = (initialState?: Partial<WhiteboardState>) => {
@@ -8,6 +8,12 @@ export const useWhiteboard = (initialState?: Partial<WhiteboardState>) => {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
+        
+        // Data migration for older saved states that used string arrays for pdfPages
+        if (parsed.pdfPages && parsed.pdfPages.length > 0 && typeof parsed.pdfPages[0] === 'string') {
+          parsed.pdfPages = parsed.pdfPages.map((url: string) => ({ url, width: 612, height: 792 })); // Assume standard letter if unknown
+        }
+
         const defaultConfig = {
           lines: [],
           pdfPages: [],
@@ -139,7 +145,7 @@ export const useWhiteboard = (initialState?: Partial<WhiteboardState>) => {
     }));
   }, []);
 
-  const setPDFPages = useCallback((pages: string[]) => {
+  const setPDFPages = useCallback((pages: PDFPageInfo[]) => {
     setState(prev => ({ ...prev, pdfPages: pages, currentPage: 0 }));
   }, []);
 

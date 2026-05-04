@@ -31,9 +31,15 @@ export interface ToolState {
   unit?: 'in' | 'cm';
 }
 
+export interface PDFPageInfo {
+  url: string;
+  width: number;
+  height: number;
+}
+
 export interface WhiteboardState {
   lines: WhiteboardLine[];
-  pdfPages: string[];
+  pdfPages: PDFPageInfo[];
   currentPage: number;
   ruler: ToolState;
   protractor: ToolState;

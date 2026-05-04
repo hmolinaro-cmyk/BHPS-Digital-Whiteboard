@@ -40,13 +40,14 @@ export const Ruler: React.FC<RulerProps> = React.memo(({ state, onChange, docume
           />
           <Text
             x={x - 20}
-            y={40}
+            y={42}
             width={40}
             text={`${i}`}
-            fontSize={isCm ? 16 : 18}
+            fontSize={isCm ? 14 : 16}
             fontStyle="bold"
             fill="#0f172a"
             align="center"
+            verticalAlign="top"
           />
           
           {/* Subdivisions */}
