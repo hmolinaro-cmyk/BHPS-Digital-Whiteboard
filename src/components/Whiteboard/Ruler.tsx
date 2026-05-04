@@ -16,13 +16,13 @@ export const Ruler: React.FC<RulerProps> = React.memo(({ state, onChange, docume
   
   // 1 inch = 96 pixels at standard resolution
   const inchStep = 96 * state.scale * resolutionScale;
-  // 1 cm = 96 / 2.54 pixels
+  // 1 cm = 37.79527559 pixels (96 / 2.54)
   const cmStep = (96 / 2.54) * state.scale * resolutionScale;
   
   const unitStep = isCm ? cmStep : inchStep;
-  const numUnits = isCm ? 20 : 8; // 20 units (8in or 20cm)
+  const numUnits = isCm ? 30 : 12; // 30cm or 12in (Standard ruler sizes)
   const width = numUnits * unitStep;
-  const height = 90 * state.scale * resolutionScale;
+  const height = 100 * state.scale * resolutionScale;
 
   const markings = React.useMemo(() => {
     const result = [];
@@ -34,16 +34,16 @@ export const Ruler: React.FC<RulerProps> = React.memo(({ state, onChange, docume
       result.push(
         <React.Fragment key={`unit-${i}`}>
           <Line
-            points={[x, 0, x, 32]}
+            points={[x, 0, x, 35]}
             stroke="#0f172a"
             strokeWidth={2.5}
           />
           <Text
-            x={x - 25}
-            y={height - 35}
-            width={50}
-            text={`${i}${isCm ? '' : '"'}`}
-            fontSize={18}
+            x={x - 20}
+            y={40}
+            width={40}
+            text={`${i}`}
+            fontSize={isCm ? 16 : 18}
             fontStyle="bold"
             fill="#0f172a"
             align="center"
@@ -55,7 +55,7 @@ export const Ruler: React.FC<RulerProps> = React.memo(({ state, onChange, docume
             Array.from({ length: 9 }).map((_, j) => {
               const mmIndex = j + 1;
               const mmX = x + (mmIndex * unitStep / 10);
-              const h = mmIndex === 5 ? 18 : 10;
+              const h = mmIndex === 5 ? 20 : 12;
               const weight = mmIndex === 5 ? 1.5 : 1;
               
               return (
@@ -73,13 +73,13 @@ export const Ruler: React.FC<RulerProps> = React.memo(({ state, onChange, docume
               const subIndex = j + 1;
               const subX = x + (subIndex * unitStep / 16);
               
-              let h = 8;
+              let h = 10;
               let weight = 1;
               let color = "#94a3b8";
               
-              if (subIndex === 8) { h = 24; weight = 2; color = "#334155"; }
+              if (subIndex === 8) { h = 25; weight = 2; color = "#334155"; }
               else if (subIndex === 4 || subIndex === 12) { h = 18; weight = 1.5; color = "#475569"; }
-              else if (subIndex % 2 === 0) { h = 12; weight = 1; color = "#64748b"; }
+              else if (subIndex % 2 === 0) { h = 14; weight = 1; color = "#64748b"; }
 
               return (
                 <Line
@@ -95,7 +95,7 @@ export const Ruler: React.FC<RulerProps> = React.memo(({ state, onChange, docume
       );
     }
     return result;
-  }, [width, unitStep, isCm, height, numUnits]);
+  }, [width, unitStep, isCm, numUnits]);
 
   return (
     <Group

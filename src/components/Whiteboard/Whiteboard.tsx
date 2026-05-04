@@ -54,7 +54,7 @@ export const Whiteboard: React.FC = () => {
     setState 
   } = useWhiteboard();
 
-  const [currentTool, setCurrentTool] = useState<Tool>(Tool.Pen);
+  const [currentTool, setCurrentTool] = useState<Tool>(Tool.Select);
   const [isDrawing, setIsDrawing] = useState(false);
   const [docScale, setDocScale] = useState(0.9);
   const [dimensions, setDimensions] = useState({ width: window.innerWidth, height: window.innerHeight - 80 });
@@ -189,7 +189,7 @@ export const Whiteboard: React.FC = () => {
         const rad = (stateRef.current.ruler.rotation * Math.PI) / 180;
         const isCm = stateRef.current.ruler.unit === 'cm';
         const unitStep = isCm ? (96 / 2.54) * stateRef.current.ruler.scale * resScaleRef.current : 96 * stateRef.current.ruler.scale * resScaleRef.current;
-        const rWidth = (isCm ? 20 : 8) * unitStep;
+        const rWidth = (isCm ? 30 : 12) * unitStep;
         const rStart = { x: stateRef.current.ruler.x, y: stateRef.current.ruler.y };
         const rEnd = { 
           x: stateRef.current.ruler.x + Math.cos(rad) * rWidth, 
@@ -293,7 +293,7 @@ export const Whiteboard: React.FC = () => {
         const rad = (stateRef.current.ruler.rotation * Math.PI) / 180;
         const isCm = stateRef.current.ruler.unit === 'cm';
         const unitStep = isCm ? (96 / 2.54) * stateRef.current.ruler.scale * resScaleRef.current : 96 * stateRef.current.ruler.scale * resScaleRef.current;
-        const rWidth = (isCm ? 20 : 8) * unitStep;
+        const rWidth = (isCm ? 30 : 12) * unitStep;
         const rStart = { x: stateRef.current.ruler.x, y: stateRef.current.ruler.y };
         const rEnd = { 
           x: stateRef.current.ruler.x + Math.cos(rad) * rWidth, 
