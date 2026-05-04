@@ -39,12 +39,14 @@ export const Ruler: React.FC<RulerProps> = React.memo(({ state, onChange, docume
             strokeWidth={2.5}
           />
           <Text
-            x={x + 6}
-            y={height - 40}
+            x={x - 25}
+            y={height - 35}
+            width={50}
             text={`${i}${isCm ? '' : '"'}`}
-            fontSize={20}
+            fontSize={18}
             fontStyle="bold"
             fill="#0f172a"
+            align="center"
           />
           
           {/* Subdivisions */}
@@ -112,14 +114,27 @@ export const Ruler: React.FC<RulerProps> = React.memo(({ state, onChange, docume
       <Rect
         width={width}
         height={height}
-        fill="rgba(251, 191, 36, 0.8)" /* Amber/Yellow from Bento design */
+        fill="rgba(251, 191, 36, 0.85)"
         stroke="#0f172a"
         strokeWidth={2}
         cornerRadius={8}
         shadowBlur={0}
-        shadowOffset={{ x: 3, y: 3 }}
+        shadowOffset={{ x: 4, y: 4 }}
         shadowColor="#0f172a"
         shadowOpacity={1}
+      />
+      
+      {/* Unit Label */}
+      <Text
+        x={width - 60}
+        y={height - 25}
+        text={isCm ? 'METRIC (CM)' : 'IMPERIAL (IN)'}
+        fontSize={10}
+        fontStyle="black"
+        fill="#b45309"
+        opacity={0.6}
+        align="right"
+        width={50}
       />
       
       {markings}
