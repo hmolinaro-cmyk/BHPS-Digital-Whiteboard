@@ -74,20 +74,19 @@ export const Whiteboard: React.FC = () => {
   const activeHeight = containerDimensions.height || (dimensions.height - 180);
 
   // Reference width for PDF rendering - we use a consistent value for both rendering and calibration
-  const pdfRefWidth = Math.max(400, activeWidth - 40);
+  const pdfRefWidth = Math.max(400, activeWidth - 48);
 
   // Calculate a resolution-based scale for tools to ensure they stay readable
-  // If a PDF is loaded, we calibrate the ruler to match the PDF's internal dimensions
+  // Standard screen PPI is 96. Standard PDF PPI is 72.
   const currentPageInfo = state.pdfPages[state.currentPage];
   
+  // Default to a scale that looks good on the screen resolution
   let resScale = Math.max(0.6, Math.min(2.0, activeWidth / 1440));
   
   if (currentPageInfo && currentPageInfo.width) {
-    // 1 point in PDF = 1/72 inch.
-    // Our ruler uses 96px as base inch at scale 1.0.
-    // PPI on screen = (pdfRefWidth / currentPageInfo.width) * 72
-    // resScale = PPI_on_screen / 96
-    resScale = (pdfRefWidth / currentPageInfo.width) * (72 / 96);
+    // Math: (Pixels on screen per point) * (72 points per inch) / (96 standard pixels per inch)
+    // resScale = (pdfRefWidth / currentPageInfo.width) * (72 / 96)
+    resScale = (pdfRefWidth / currentPageInfo.width) * 0.75;
   }
 
   // Maintain a stable ref for state to avoid recreating event handlers
@@ -201,8 +200,8 @@ export const Whiteboard: React.FC = () => {
         const rad = (stateRef.current.ruler.rotation * Math.PI) / 180;
         const isCm = stateRef.current.ruler.unit === 'cm';
         const unitStep = isCm ? (96 / 2.54) * stateRef.current.ruler.scale * resScaleRef.current : 96 * stateRef.current.ruler.scale * resScaleRef.current;
-        const indent = 15 * resScaleRef.current;
-        const rWidth = (isCm ? 30 : 12) * unitStep + (indent * 2);
+        const padding = 10;
+        const rWidth = (isCm ? 30 : 12) * unitStep + (padding * 2);
         const rStart = { x: stateRef.current.ruler.x, y: stateRef.current.ruler.y };
         const rEnd = { 
           x: stateRef.current.ruler.x + Math.cos(rad) * rWidth, 
@@ -306,8 +305,8 @@ export const Whiteboard: React.FC = () => {
         const rad = (stateRef.current.ruler.rotation * Math.PI) / 180;
         const isCm = stateRef.current.ruler.unit === 'cm';
         const unitStep = isCm ? (96 / 2.54) * stateRef.current.ruler.scale * resScaleRef.current : 96 * stateRef.current.ruler.scale * resScaleRef.current;
-        const indent = 15 * resScaleRef.current;
-        const rWidth = (isCm ? 30 : 12) * unitStep + (indent * 2);
+        const padding = 10;
+        const rWidth = (isCm ? 30 : 12) * unitStep + (padding * 2);
         const rStart = { x: stateRef.current.ruler.x, y: stateRef.current.ruler.y };
         const rEnd = { 
           x: stateRef.current.ruler.x + Math.cos(rad) * rWidth, 
@@ -373,14 +372,20 @@ export const Whiteboard: React.FC = () => {
       
       if (!pdfCtx || !lineCtx) throw new Error('Could not create canvas contexts');
 
-      // Reference width used during drawing (PDFPage component's width prop)
-      const screenWidth = dimensions.width - 500;
+      // Reference dimension used during drawing (PDFPage component's width prop)
+      // This MUST match the calculation used for resScale in the main component
+      const getPageRefWidth = (pageWidth: number) => {
+        // activeWidth logic from render phase
+        const currentActiveWidth = containerDimensions.width || (window.innerWidth - 480);
+        return Math.max(400, currentActiveWidth - 48);
+      };
 
       for (let i = 0; i < state.pdfPages.length; i++) {
         // Update progress UI
         setState(prev => ({ ...prev, currentPage: i }));
         
         const pageInfo = state.pdfPages[i];
+        const screenWidth = getPageRefWidth(pageInfo.width);
         
         // Wait for image loading
         const img = new Image();

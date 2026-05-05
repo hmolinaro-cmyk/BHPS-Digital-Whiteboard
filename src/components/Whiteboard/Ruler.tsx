@@ -23,34 +23,33 @@ export const Ruler: React.FC<RulerProps> = React.memo(({ state, onChange, docume
   const numUnits = isCm ? 30 : 12; // 30cm or 12in (Standard ruler sizes)
   
   // Add a small padding (lead-in) at the start so the 0 mark isn't on the absolute edge
-  const indent = 15 * resolutionScale; 
-  const width = (numUnits * unitStep) + (indent * 2);
-  const height = 100 * state.scale * resolutionScale;
+  const padding = 10; 
+  const width = (numUnits * unitStep) + (padding * 2);
+  const height = 80 * state.scale * (resolutionScale > 1 ? 1 : resolutionScale); // Caps height growth
 
   const markings = React.useMemo(() => {
     const result = [];
     
     for (let i = 0; i <= numUnits; i++) {
-      const x = indent + (i * unitStep);
+      const x = padding + (i * unitStep);
       
       // Major Marker
       result.push(
         <React.Fragment key={`unit-${i}`}>
           <Line
-            points={[x, 0, x, 35]}
+            points={[x, 0, x, 30]}
             stroke="#0f172a"
-            strokeWidth={2.5}
+            strokeWidth={2}
           />
           <Text
             x={x - 20}
-            y={42}
+            y={35}
             width={40}
             text={`${i}`}
-            fontSize={(isCm ? 14 : 16) * resolutionScale}
+            fontSize={(isCm ? 12 : 14) * resolutionScale}
             fontStyle="bold"
             fill="#0f172a"
             align="center"
-            verticalAlign="top"
           />
           
           {/* Subdivisions */}
@@ -128,29 +127,38 @@ export const Ruler: React.FC<RulerProps> = React.memo(({ state, onChange, docume
         shadowOpacity={1}
       />
       
-      {/* Unit Label */}
-      <Text
-        x={width - 60}
+      {/* Unit Label & Toggle Area */}
+      <Group
+        x={width / 2 - 50}
         y={height - 25}
-        text={isCm ? 'METRIC (CM)' : 'IMPERIAL (IN)'}
-        fontSize={10 * resolutionScale}
-        fontStyle="black"
-        fill="#b45309"
-        opacity={0.6}
-        align="right"
-        width={50}
-      />
+        onClick={() => onChange({ ...state, unit: isCm ? 'in' : 'cm' })}
+        onTap={() => onChange({ ...state, unit: isCm ? 'in' : 'cm' })}
+        cursor="pointer"
+      >
+        <Rect 
+          width={100}
+          height={20}
+          fill="rgba(255,255,255,0.3)"
+          cornerRadius={4}
+        />
+        <Text
+          width={100}
+          height={20}
+          text={isCm ? 'UNIT: CM (Click to swap)' : 'UNIT: IN (Click to swap)'}
+          fontSize={9}
+          fontStyle="bold"
+          fill="#b45309"
+          align="center"
+          verticalAlign="middle"
+        />
+      </Group>
       
       {markings}
 
-      {/* Rotation Handle */}
-      <Rect
-        x={width - 30}
-        y={height / 2 - 15}
-        width={30}
-        height={30}
-        fill="#3b82f6"
-        cornerRadius={15}
+      {/* Rotation Handle - Scaled and styled better */}
+      <Group
+        x={width - 25}
+        y={height / 2 - 12}
         draggable={draggable}
         onDragMove={(e) => {
           const stage = e.target.getStage();
@@ -158,17 +166,33 @@ export const Ruler: React.FC<RulerProps> = React.memo(({ state, onChange, docume
           const pos = stage.getPointerPosition();
           if (!pos) return;
           
-          // Compensate for stage scale to get layer coordinates
           const dx = (pos.x / documentScale) - state.x;
           const dy = (pos.y / documentScale) - state.y;
           const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
           
           onChange({ ...state, rotation: angle });
-          // Reset handle position so it doesn't stay where it was dragged
-          e.target.x(width - 30);
-          e.target.y(height / 2 - 15);
+          e.target.x(width - 25);
+          e.target.y(height / 2 - 12);
         }}
-      />
+      >
+        <Rect
+          width={24}
+          height={24}
+          fill="#3b82f6"
+          cornerRadius={12}
+          stroke="#1e40af"
+          strokeWidth={2}
+          shadowBlur={4}
+          shadowOpacity={0.2}
+        />
+        <Line
+           points={[6, 12, 18, 12, 12, 6, 18, 12, 12, 18]}
+           stroke="white"
+           strokeWidth={2}
+           lineJoin="round"
+           lineCap="round"
+        />
+      </Group>
     </Group>
   );
 });
