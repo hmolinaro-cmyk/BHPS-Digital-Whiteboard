@@ -41,10 +41,20 @@ export const useWhiteboard = (initialState?: Partial<WhiteboardState>) => {
             scale: 1,
           },
         };
-        const state = { ...defaultConfig, ...parsed };
+        const state = { 
+          ...defaultConfig, 
+          ...parsed,
+          ruler: { ...defaultConfig.ruler, ...parsed.ruler },
+          protractor: { ...defaultConfig.protractor, ...parsed.protractor },
+        };
         // Ensure tools are always invisible at startup
         state.ruler.visible = false;
         state.protractor.visible = false;
+        
+        // Ensure scales are valid numbers and have a safe minimum
+        if (typeof state.ruler.scale !== 'number' || isNaN(state.ruler.scale) || state.ruler.scale < 0.1) state.ruler.scale = 1;
+        if (typeof state.protractor.scale !== 'number' || isNaN(state.protractor.scale) || state.protractor.scale < 0.1) state.protractor.scale = 1;
+        
         return state;
       } catch (e) {
         console.error('Failed to parse saved state', e);
@@ -150,7 +160,15 @@ export const useWhiteboard = (initialState?: Partial<WhiteboardState>) => {
   }, []);
 
   const updateToolPos = useCallback((tool: 'ruler' | 'protractor', newState: ToolState) => {
-    setState(prev => ({ ...prev, [tool]: newState }));
+    // Sanitize the incoming state to prevent NaN and extreme scaling
+    const sanitizedState = { ...newState };
+    if (typeof sanitizedState.scale !== 'number' || isNaN(sanitizedState.scale)) {
+      sanitizedState.scale = 1;
+    } else {
+      sanitizedState.scale = Math.max(0.1, Math.min(10, sanitizedState.scale));
+    }
+    
+    setState(prev => ({ ...prev, [tool]: sanitizedState }));
   }, []);
 
   const setSize = useCallback((tool: Tool.Pen | Tool.Eraser, size: number) => {
@@ -165,10 +183,12 @@ export const useWhiteboard = (initialState?: Partial<WhiteboardState>) => {
   }, []);
 
   const setToolScale = useCallback((scale: number) => {
+    if (typeof scale !== 'number' || isNaN(scale)) return;
+    const clampedScale = Math.max(0.5, Math.min(3.0, scale));
     setState(prev => ({
       ...prev,
-      ruler: { ...prev.ruler, scale },
-      protractor: { ...prev.protractor, scale }
+      ruler: { ...prev.ruler, scale: clampedScale },
+      protractor: { ...prev.protractor, scale: clampedScale }
     }));
   }, []);
 

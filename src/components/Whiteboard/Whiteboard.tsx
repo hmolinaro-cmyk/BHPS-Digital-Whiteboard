@@ -79,16 +79,22 @@ export const Whiteboard: React.FC = () => {
 
   // Calculate a resolution-based scale for tools to ensure they stay readable
   // Standard screen PPI is 96. Standard PDF PPI is 72.
-  const currentPageInfo = state.pdfPages[state.currentPage];
-  
-  // Default to a scale that looks good on the screen resolution
-  let resScale = Math.max(0.6, Math.min(2.0, activeWidth / 1440));
-  
-  if (currentPageInfo && currentPageInfo.width) {
-    // Math: (Pixels on screen per point) * (72 points per inch) / (96 standard pixels per inch)
-    // resScale = (pdfRefWidth / currentPageInfo.width) * (72 / 96)
-    resScale = (pdfRefWidth / currentPageInfo.width) * 0.75;
-  }
+  const resScale = React.useMemo(() => {
+    const currentPageInfo = state.pdfPages[state.currentPage];
+    
+    // Default to a scale that looks good on the screen resolution
+    let baseResScale = Math.max(0.6, Math.min(2.0, activeWidth / 1440));
+    
+    if (currentPageInfo && currentPageInfo.width > 0 && typeof pdfRefWidth === 'number' && !isNaN(pdfRefWidth)) {
+      // Math: (Pixels on screen per point) * (72 points per inch) / (96 standard pixels per inch)
+      // scale = (pdfRefWidth / pageWidth) * (72 / 96)
+      const calculated = (pdfRefWidth / currentPageInfo.width) * 0.75;
+      // Clamp to reasonable bounds to prevent extreme tool sizes
+      if (isNaN(calculated)) return baseResScale;
+      return Math.max(0.2, Math.min(5.0, calculated));
+    }
+    return baseResScale;
+  }, [activeWidth, state.pdfPages, state.currentPage, pdfRefWidth]);
 
   // Maintain a stable ref for state to avoid recreating event handlers
   const stateRef = useRef(state);
@@ -677,25 +683,48 @@ export const Whiteboard: React.FC = () => {
             </div>
           </div>
 
-          <div className="absolute bottom-4 right-4 flex flex-col gap-2 z-10">
+          <div className="absolute bottom-4 right-4 flex flex-col items-end gap-2 z-30 pointer-events-none">
             {/* Tool Size Control */}
-            <div className="flex items-center gap-3 bg-white/90 backdrop-blur border-2 border-bento-border px-4 py-2 rounded-xl shadow-lg">
-              <span className="text-[10px] font-black whitespace-nowrap text-slate-500 uppercase tracking-widest">Tool Size</span>
+            <div 
+              className="flex items-center gap-3 bg-white/95 backdrop-blur-sm border-2 border-bento-border px-4 py-2 rounded-xl shadow-xl group transition-all hover:bg-white pointer-events-auto"
+              onPointerDown={(e) => e.stopPropagation()} 
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()} 
+            >
+              <span className="text-[10px] font-black whitespace-nowrap text-slate-500 uppercase tracking-widest select-none">Tool Size</span>
               <Slider 
-                value={[state.ruler.scale]} 
-                onValueChange={(val: any) => setToolScale(val[0])} 
+                key="tool-size-slider"
+                value={[state.ruler.scale || 1]} 
+                onValueChange={(val: any) => {
+                  const safeVal = Array.isArray(val) ? val[0] : val;
+                  if (typeof safeVal === 'number' && !isNaN(safeVal)) {
+                    setToolScale(safeVal);
+                  }
+                }} 
                 min={0.5} 
-                max={2.5} 
+                max={3.0} 
                 step={0.1}
-                className="w-24 cursor-pointer"
+                className="w-32 cursor-pointer"
               />
-              <span className="text-[10px] font-mono font-bold w-10 text-center">
-                {Math.round(state.ruler.scale * 100)}%
-              </span>
+              <div className="flex items-center gap-2 min-w-[70px]">
+                <span className="text-[10px] font-mono font-bold w-12 text-center text-slate-700">
+                  {Math.round((state.ruler.scale || 1) * 100)}%
+                </span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setToolScale(1.0);
+                  }}
+                  className="p-1 hover:bg-slate-200 rounded-md transition-colors text-slate-400 hover:text-slate-600"
+                  title="Reset to 100%"
+                >
+                  <RotateCw size={14} />
+                </button>
+              </div>
             </div>
 
             {/* Document Zoom Control */}
-            <div className="flex items-center gap-2 bg-white/90 backdrop-blur border-2 border-bento-border p-1.5 rounded-xl shadow-lg">
+            <div className="flex items-center gap-2 bg-white/90 backdrop-blur border-2 border-bento-border p-1.5 rounded-xl shadow-lg pointer-events-auto">
               <button 
                 onClick={() => setDocScale(prev => Math.max(0.2, prev - 0.1))}
                 className="w-8 h-8 flex items-center justify-center border-2 border-slate-200 rounded-lg hover:bg-slate-100 font-bold transition-colors"
@@ -880,17 +909,20 @@ export const Whiteboard: React.FC = () => {
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] font-black uppercase">Tool Size</span>
-                        <span className="text-[10px] font-mono bg-slate-100 px-1.5 py-0.5 rounded">{Math.round(state.ruler.scale * 100)}%</span>
+                        <span className="text-[10px] font-mono bg-slate-100 px-1.5 py-0.5 rounded">
+                          {Math.round((state.ruler.scale || 1) * 100)}%
+                        </span>
                       </div>
                       <Slider
-                        value={[state.ruler.scale]}
+                        value={[state.ruler.scale || 1]}
                         min={0.5}
                         max={3.0}
                         step={0.1}
-                        onValueChange={(val) => {
-                          const scale = val[0];
-                          updateToolPos('ruler', { ...state.ruler, scale });
-                          updateToolPos('protractor', { ...state.protractor, scale });
+                        onValueChange={(val: any) => {
+                          const safeVal = Array.isArray(val) ? val[0] : val;
+                          if (typeof safeVal === 'number' && !isNaN(safeVal)) {
+                            setToolScale(safeVal);
+                          }
                         }}
                       />
                     </div>
