@@ -164,6 +164,14 @@ export const useWhiteboard = (initialState?: Partial<WhiteboardState>) => {
     setState(prev => ({ ...prev, brushColor: color }));
   }, []);
 
+  const setToolScale = useCallback((scale: number) => {
+    setState(prev => ({
+      ...prev,
+      ruler: { ...prev.ruler, scale },
+      protractor: { ...prev.protractor, scale }
+    }));
+  }, []);
+
   return {
     state,
     addLine,
@@ -177,6 +185,7 @@ export const useWhiteboard = (initialState?: Partial<WhiteboardState>) => {
     updateToolPos,
     setSize,
     setColor,
+    setToolScale,
     setState
   };
 };

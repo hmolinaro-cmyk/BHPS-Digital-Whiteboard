@@ -51,6 +51,7 @@ export const Whiteboard: React.FC = () => {
     updateToolPos, 
     setSize,
     setColor,
+    setToolScale,
     setState 
   } = useWhiteboard();
 
@@ -676,22 +677,41 @@ export const Whiteboard: React.FC = () => {
             </div>
           </div>
 
-          <div className="absolute bottom-4 right-4 flex items-center gap-2 bg-white/90 backdrop-blur border-2 border-bento-border p-1.5 rounded-xl shadow-lg z-10">
-            <button 
-              onClick={() => setDocScale(prev => Math.max(0.2, prev - 0.1))}
-              className="w-8 h-8 flex items-center justify-center border-2 border-slate-200 rounded-lg hover:bg-slate-100 font-bold transition-colors"
-            >
-              -
-            </button>
-            <span className="text-[10px] font-black w-10 text-center font-mono">
-              {Math.round(docScale * 100)}%
-            </span>
-            <button 
-              onClick={() => setDocScale(prev => Math.min(3, prev + 0.1))}
-              className="w-8 h-8 flex items-center justify-center border-2 border-slate-200 rounded-lg hover:bg-slate-100 font-bold transition-colors"
-            >
-              +
-            </button>
+          <div className="absolute bottom-4 right-4 flex flex-col gap-2 z-10">
+            {/* Tool Size Control */}
+            <div className="flex items-center gap-3 bg-white/90 backdrop-blur border-2 border-bento-border px-4 py-2 rounded-xl shadow-lg">
+              <span className="text-[10px] font-black whitespace-nowrap text-slate-500 uppercase tracking-widest">Tool Size</span>
+              <Slider 
+                value={[state.ruler.scale]} 
+                onValueChange={(val: any) => setToolScale(val[0])} 
+                min={0.5} 
+                max={2.5} 
+                step={0.1}
+                className="w-24 cursor-pointer"
+              />
+              <span className="text-[10px] font-mono font-bold w-10 text-center">
+                {Math.round(state.ruler.scale * 100)}%
+              </span>
+            </div>
+
+            {/* Document Zoom Control */}
+            <div className="flex items-center gap-2 bg-white/90 backdrop-blur border-2 border-bento-border p-1.5 rounded-xl shadow-lg">
+              <button 
+                onClick={() => setDocScale(prev => Math.max(0.2, prev - 0.1))}
+                className="w-8 h-8 flex items-center justify-center border-2 border-slate-200 rounded-lg hover:bg-slate-100 font-bold transition-colors"
+              >
+                -
+              </button>
+              <span className="text-[10px] font-black w-10 text-center font-mono">
+                {Math.round(docScale * 100)}%
+              </span>
+              <button 
+                onClick={() => setDocScale(prev => Math.min(3, prev + 0.1))}
+                className="w-8 h-8 flex items-center justify-center border-2 border-slate-200 rounded-lg hover:bg-slate-100 font-bold transition-colors"
+               >
+                +
+              </button>
+            </div>
           </div>
         </div>
 
