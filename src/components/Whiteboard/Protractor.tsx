@@ -43,7 +43,7 @@ export const Protractor: React.FC<ProtractorProps> = React.memo(({ state, onChan
                 x={Math.cos(angleRad) * (radius - 40) - 10}
                 y={-Math.sin(angleRad) * (radius - 40) - 5}
                 text={`${180 - i}`}
-                fontSize={14}
+                fontSize={18}
                 fontStyle="bold"
                 fill="#0f172a"
                 rotation={-i}
@@ -52,11 +52,12 @@ export const Protractor: React.FC<ProtractorProps> = React.memo(({ state, onChan
                />
                {/* Inner Scale: 0 (left) to 180 (right) */}
                <Text
-                x={Math.cos(angleRad) * (radius - 60) - 10}
-                y={-Math.sin(angleRad) * (radius - 60) - 5}
+                x={Math.cos(angleRad) * (radius - 64) - 10}
+                y={-Math.sin(angleRad) * (radius - 64) - 5}
                 text={`${i}`}
-                fontSize={12}
+                fontSize={15}
                 fill="#475569"
+                fontStyle="bold"
                 rotation={-i}
                 align="center"
                 verticalAlign="middle"

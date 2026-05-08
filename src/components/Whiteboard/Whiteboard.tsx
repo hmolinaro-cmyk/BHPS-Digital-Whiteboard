@@ -74,40 +74,32 @@ export const Whiteboard: React.FC = () => {
   const activeWidth = containerDimensions.width || (dimensions.width - 480);
   const activeHeight = containerDimensions.height || (dimensions.height - 180);
 
-  // Reference width for PDF rendering - we use a consistent value for both rendering and calibration
-  const pdfRefWidth = Math.max(400, activeWidth - 48);
+  // Use the intrinsic PDF width as the base coordinate system to prevent drift on resize
+  const currentPageInfo = state.pdfPages[state.currentPage];
+  const pdfInternalWidth = currentPageInfo?.width || 800;
+  
+  // Fit scale: how much to scale the internal units to fit the current viewport width
+  const fitScale = Math.max(0.2, (activeWidth - 48) / pdfInternalWidth);
+  
+  // Total display scale combines the auto-fit with the user's manual zoom
+  const totalDisplayScale = docScale * fitScale;
 
-  // Calculate a resolution-based scale for tools to ensure they stay readable
-  // Standard screen PPI is 96. Standard PDF PPI is 72.
-  const resScale = React.useMemo(() => {
-    const currentPageInfo = state.pdfPages[state.currentPage];
-    
-    // Default to a scale that looks good on the screen resolution
-    let baseResScale = Math.max(0.6, Math.min(2.0, activeWidth / 1440));
-    
-    if (currentPageInfo && currentPageInfo.width > 0 && typeof pdfRefWidth === 'number' && !isNaN(pdfRefWidth)) {
-      // Math: (Pixels on screen per point) * (72 points per inch) / (96 standard pixels per inch)
-      // scale = (pdfRefWidth / pageWidth) * (72 / 96)
-      const calculated = (pdfRefWidth / currentPageInfo.width) * 0.75;
-      // Clamp to reasonable bounds to prevent extreme tool sizes
-      if (isNaN(calculated)) return baseResScale;
-      return Math.max(0.2, Math.min(5.0, calculated));
-    }
-    return baseResScale;
-  }, [activeWidth, state.pdfPages, state.currentPage, pdfRefWidth]);
+  // Since we are now using PDF points (1/72") as the internal coordinate system, 
+  // tools should be sized in points directly (no resolution-based scaling needed).
+  const resScale = 1.0;
 
-  // Maintain a stable ref for state to avoid recreating event handlers
+  // Maintain stable refs for state to avoid recreating event handlers
   const stateRef = useRef(state);
   const currentToolRef = useRef(currentTool);
   const isDrawingRef = useRef(isDrawing);
-  const docScaleRef = useRef(docScale);
+  const totalDisplayScaleRef = useRef(totalDisplayScale);
   const resScaleRef = useRef(resScale);
   const currentLinePointsRef = useRef<number[]>([]);
 
   useEffect(() => { stateRef.current = state; }, [state]);
   useEffect(() => { currentToolRef.current = currentTool; }, [currentTool]);
   useEffect(() => { isDrawingRef.current = isDrawing; }, [isDrawing]);
-  useEffect(() => { docScaleRef.current = docScale; }, [docScale]);
+  useEffect(() => { totalDisplayScaleRef.current = totalDisplayScale; }, [totalDisplayScale]);
   useEffect(() => { resScaleRef.current = resScale; }, [resScale]);
 
   useEffect(() => {
@@ -165,8 +157,8 @@ export const Whiteboard: React.FC = () => {
   }, []);
 
 
-  const stageWidth = Math.max(200, activeWidth * docScale);
-  const stageHeight = Math.max(activeHeight, (pdfHeight + 40) * docScale);
+  const stageWidth = Math.max(200, pdfInternalWidth * totalDisplayScale);
+  const stageHeight = Math.max(activeHeight, (pdfHeight + 40) * totalDisplayScale);
 
   const handlePointerDown = useCallback((e: any) => {
     // Prevent drawing when clicking on tools or buttons or if not primary pointer
@@ -187,10 +179,10 @@ export const Whiteboard: React.FC = () => {
     const pos = stage.getPointerPosition();
     if (!pos) return;
 
-    // Transform stage coordinates to layer coordinates by dividing by docScale
+    // Transform stage coordinates to layer coordinates by dividing by the total scale
     const transformedPos = {
-      x: pos.x / docScaleRef.current,
-      y: pos.y / docScaleRef.current
+      x: pos.x / totalDisplayScaleRef.current,
+      y: pos.y / totalDisplayScaleRef.current
     };
 
     setIsDrawing(true);
@@ -198,7 +190,7 @@ export const Whiteboard: React.FC = () => {
     
     // Check for snapping
     let startPoint = transformedPos;
-    const snapThreshold = 25 / docScaleRef.current;
+    const snapThreshold = 25 / totalDisplayScaleRef.current;
     let bestSnap: Point | null = null;
     let minSnapDist = Infinity;
 
@@ -249,7 +241,7 @@ export const Whiteboard: React.FC = () => {
       tool: currentToolRef.current === Tool.Eraser ? Tool.Eraser : Tool.Pen,
       points: initialPoints,
       color: currentToolRef.current === Tool.Eraser ? '#ffffff' : stateRef.current.brushColor,
-      width: (currentToolRef.current === Tool.Eraser ? stateRef.current.eraserSize : stateRef.current.brushSize) / docScaleRef.current,
+      width: (currentToolRef.current === Tool.Eraser ? stateRef.current.eraserSize : stateRef.current.brushSize) / totalDisplayScaleRef.current,
     });
   }, [addLine]);
 
@@ -272,15 +264,15 @@ export const Whiteboard: React.FC = () => {
     }
 
     const transformedPos = {
-      x: pos.x / docScaleRef.current,
-      y: pos.y / docScaleRef.current
+      x: pos.x / totalDisplayScaleRef.current,
+      y: pos.y / totalDisplayScaleRef.current
     };
     
     // Imperatively update eraser cursor to avoid React re-render cycles
     if (eraserRef.current) {
       if (currentToolRef.current === Tool.Eraser) {
         eraserRef.current.position(transformedPos);
-        eraserRef.current.radius((stateRef.current.eraserSize / 2) / docScaleRef.current);
+        eraserRef.current.radius((stateRef.current.eraserSize / 2) / totalDisplayScaleRef.current);
         eraserRef.current.visible(true);
         eraserRef.current.moveToTop(); // Ensure it's above other elements in the same layer
         eraserRef.current.getLayer()?.batchDraw();
@@ -300,10 +292,10 @@ export const Whiteboard: React.FC = () => {
     const lastY = points[points.length - 1];
     
     const moveDist = Math.sqrt((transformedPos.x - lastX) ** 2 + (transformedPos.y - lastY) ** 2);
-    if (moveDist < 2 / docScaleRef.current) return;
+    if (moveDist < 2 / totalDisplayScaleRef.current) return;
 
     let currentPoint = transformedPos;
-    const snapThreshold = 25 / docScaleRef.current;
+    const snapThreshold = 25 / totalDisplayScaleRef.current;
     let bestSnap: Point | null = null;
     let minSnapDist = Infinity;
 
@@ -638,22 +630,22 @@ export const Whiteboard: React.FC = () => {
                 className="bg-white"
                 style={{ touchAction: currentTool === Tool.Select ? 'auto' : 'none' }}
               >
-                <Layer scaleX={docScale} scaleY={docScale}>
+                <Layer scaleX={totalDisplayScale} scaleY={totalDisplayScale}>
                   {state.pdfPages[state.currentPage] && (
                     <PDFPage 
                       url={state.pdfPages[state.currentPage].url} 
-                      width={pdfRefWidth} 
+                      width={pdfInternalWidth} 
                       onHeightChange={setPdfHeight}
                     />
                   )}
                 </Layer>
 
-                <Layer scaleX={docScale} scaleY={docScale}>
+                <Layer scaleX={totalDisplayScale} scaleY={totalDisplayScale}>
                   {memoLines}
                   <Circle
                     ref={eraserRef}
                     stroke="#64748b"
-                    strokeWidth={1.5 / docScale}
+                    strokeWidth={1.5 / totalDisplayScale}
                     dash={[4, 4]}
                     opacity={0.5}
                     listening={false}
@@ -661,11 +653,11 @@ export const Whiteboard: React.FC = () => {
                   />
                 </Layer>
 
-                <Layer scaleX={docScale} scaleY={docScale}>
+                <Layer scaleX={totalDisplayScale} scaleY={totalDisplayScale}>
                   <Ruler 
                     state={state.ruler} 
                     onChange={(s) => updateToolPos('ruler', s)} 
-                    documentScale={docScale}
+                    documentScale={totalDisplayScale}
                     resolutionScale={resScale}
                     draggable={currentTool === Tool.Select}
                     listening={currentTool === Tool.Select}
@@ -673,7 +665,7 @@ export const Whiteboard: React.FC = () => {
                   <BarProtractor 
                     state={state.protractor} 
                     onChange={(s) => updateToolPos('protractor', s)} 
-                    documentScale={docScale}
+                    documentScale={totalDisplayScale}
                     resolutionScale={resScale}
                     draggable={currentTool === Tool.Select}
                     listening={currentTool === Tool.Select}
