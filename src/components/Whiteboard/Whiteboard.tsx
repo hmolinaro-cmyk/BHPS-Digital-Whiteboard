@@ -117,7 +117,11 @@ export const Whiteboard: React.FC = () => {
     // Native listeners with passive: false are needed to reliably prevent scrolling on many touch devices
     const handleTouch = (e: TouchEvent) => {
       if (currentToolRef.current !== Tool.Select) {
-        if (e.cancelable) {
+        // Only prevent default if the touch is within the active drawing area (the stage)
+        const target = e.target as HTMLElement;
+        const isOnStage = target.closest('.konvajs-content') || target.closest('.stage-container');
+        
+        if (isOnStage && e.cancelable) {
           e.preventDefault();
         }
       }
@@ -158,7 +162,7 @@ export const Whiteboard: React.FC = () => {
 
 
   const stageWidth = Math.max(200, pdfInternalWidth * totalDisplayScale);
-  const stageHeight = Math.max(activeHeight, (pdfHeight + 40) * totalDisplayScale);
+  const stageHeight = (pdfHeight + 40) * totalDisplayScale;
 
   const handlePointerDown = useCallback((e: any) => {
     // Prevent drawing when clicking on tools or buttons or if not primary pointer
@@ -600,16 +604,15 @@ export const Whiteboard: React.FC = () => {
             ref={containerRef}
             className={`absolute inset-0 p-4 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:20px_20px] scroll-smooth overflow-auto select-none overscroll-none`}
             style={{ 
-              touchAction: currentTool === Tool.Select ? 'auto' : 'none',
-              msTouchAction: currentTool === Tool.Select ? 'auto' : 'none'
+              touchAction: 'auto'
             }}
           >
             <div 
-              className="shrink-0 shadow-2xl border-bento-border border bg-white mb-20 mx-auto" 
+              className="stage-container shrink-0 shadow-2xl border-bento-border border bg-white mb-20 mx-auto" 
               style={{ 
                 width: stageWidth, 
                 height: stageHeight,
-                minHeight: dimensions.height - 200, // Ensure it's always at least visible
+                minHeight: 200, // Small minimum height
                 touchAction: currentTool === Tool.Select ? 'auto' : 'none'
               }}
             >
